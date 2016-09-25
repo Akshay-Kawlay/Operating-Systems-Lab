@@ -30,7 +30,7 @@ struct wc *
 wc_init(char *word_array, long size)
 {
 	struct wc *wc;
-	long table_size = size;/*((long)sqrt(size)+2);*/
+	long table_size = size/3;/*((long)sqrt(size)+2);*/
 	TABLE_SIZE = table_size;
 	wc = (struct wc *)malloc(sizeof(struct wc));
 	assert(wc);
@@ -149,7 +149,7 @@ hash(char *str)
 struct wc*
 create_hash(struct wc* wc, long size){
 
-        long table_size = size;/*((long)sqrt(size)+2);*/
+        long table_size = size/3;/*((long)sqrt(size)+2);*/
 	TABLE_SIZE = table_size;
 	wc->hashtable = (struct element **)malloc(sizeof(struct element *) * table_size);
 	int i;
