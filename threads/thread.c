@@ -57,7 +57,7 @@ thread_init(void)
 		TCB[i].isValid = 0;
 	//	TCB[i].index = i;
 	}
-	//exitQ.head = NULL;
+	
 }
 
 Tid
@@ -118,23 +118,21 @@ thread_stub(void (*thread_main)(void *), void *arg)
 
 	thread_main(arg); // call thread_main() function with arg
 	ret = thread_exit();
-	//while(1){
-	//	thread_yield(THREAD_ANY);
-	//}
-	//ret = thread_exit();
-
-	// we should only get here if we are the last thread. 
+	
  	assert(ret == THREAD_NONE);
-	// 		// all threads are done, so process should exit
-	// 			exit(0);
-	//if(ret == THREAD_NONE){}
 	exit(0);
 }
 
 Tid
 thread_yield(Tid want_tid)
 {
+
 	int setcontext_flag = 0;
+	
+	if(stack_mem_to_be_deleted != NULL){
+		free(stack_mem_to_be_deleted);
+		stack_mem_to_be_deleted = NULL;
+	}
 	if(want_tid == THREAD_SELF)
 		return current_thread_id;
 	if(want_tid == current_thread_id)
@@ -142,21 +140,6 @@ thread_yield(Tid want_tid)
 
 	if(want_tid == THREAD_ANY){
 		
-		if(stack_mem_to_be_deleted != NULL){
-			
-			//free(stack_mem_to_be_deleted);
-			//stack_mem_to_be_deleted = NULL;	
-			/*switch context to a different thread*/
-			struct thread *temp_head = readyQ.head;
-			current_thread_id = temp_head->index;
-			readyQ.head = readyQ.head->next;
-			if(current_thread_id !=0){
-				free(stack_mem_to_be_deleted);
-				stack_mem_to_be_deleted = NULL;
-			}
-			setcontext(&temp_head->thread_context);
-						
-		}
 		if(readyQ.head == NULL){
 			return THREAD_NONE;
 		}
@@ -218,15 +201,7 @@ thread_yield(Tid want_tid)
 					}else{
 						pre->next = temp->next;
 					}
-				/*	
-					int j =0;
-					struct thread *temp2 = readyQ.head;
-					while(temp2 != readyQ.tail){
-						j++;
-						temp2= temp2->next;
-					}
-					printf("size of queue = %d\n", j);
-					*/
+					
 					setcontext_flag = 1;
 					current_thread_id = want_tid;
 					setcontext(&temp->thread_context);
@@ -249,41 +224,24 @@ thread_yield(Tid want_tid)
 Tid
 thread_exit()
 {
+	if(stack_mem_to_be_deleted != NULL){
+		free(stack_mem_to_be_deleted);
+		stack_mem_to_be_deleted = NULL;
+	}
 	if(readyQ.head == NULL)
 		return THREAD_NONE;
-/*
-	add the current thread context to exit queue
-	struct exit_queue_node node;
-	node.thread_stack = TCB[current_thread_id].thread_context.uc_mcontext.gregs[REG_RSP];
-	node.next = NULL;
-	if(exitQ.head == NULL)
-		exitQ.head = node;
-	else{
-		struct exit_queue_node *temp = exitQ.head;
-		exitQ.head = node;
-		node.next = temp;		
-	}
 
-	TCB[current_thread_id].isValid = 0;
-	//struct exit_queue_node *temp = exitQ.head->next;
-	while(exitQ.head->next != NULL){
-		free(exitQ.head->thread_stack);
-		exitQ.head->next = exitQ.head->next->next;
-	}
-	*/
-	Tid copy_current_thread_id = current_thread_id;
+	//Tid copy_current_thread_id = current_thread_id;
 	TCB[current_thread_id].isValid = 0;	
-			
+	struct thread *temp_head = readyQ.head;
+        //current_thread_id = temp_head->index;...this was the error that wasted your 10 hours _/\_
+	readyQ.head = readyQ.head->next;	
 	stack_mem_to_be_deleted = TCB[current_thread_id].stack_memory;
+	current_thread_id = temp_head->index;
+	setcontext(&temp_head->thread_context);
+	//the program will not execute the assert(0) in this function	
+	assert(0);
 	
-	Tid ret = thread_yield(THREAD_ANY);
-	/*how does PC reach here if we are doing a setcontext in thread_yield?
-	*/
-	  if(ret == THREAD_FAILED)
-		return THREAD_FAILED;
-	else
-		return copy_current_thread_id;
-
 }
 
 Tid
